@@ -68,7 +68,7 @@ f = "src/fastncdf_data.h"
 wrt = function(...) cat(..., "\n", sep = "", file = f, append = TRUE)
 
 cat("static const double fastncdf_max = ", x[length(x)], ";\n", sep = "", file = f)
-wrt("static const double fastncdf_h = ", h, ";")
+wrt("static const double fastncdf_hinv = ", 1.0 / h, ";")
 wrt("static const double fastncdf_x [] = {")
 con = textConnection("xdata", "w")
 write(x, file = con, ncolumns = 5, sep = ", ")
