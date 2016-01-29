@@ -1,15 +1,4 @@
----
-title: "Fast Normal CDF"
-author: "Yixuan Qiu"
-date: "January 29, 2016"
-output: 
-  html_document: 
-    keep_md: yes
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
+## Fast Normal CDF
 
 ### Introduction
 
@@ -18,7 +7,7 @@ statistical problems. When we need to evaluate the function many times
 (for example in numerical integration), the computation performance may become
 an issue.
 
-One way to fast evaluate the function is to use a look-up table, that is, 
+One way to fast evaluate the function is to use a look-up table, that is,
 we pre-compute a set of pairs `(x[i], Φ(x[i]))` and then use interpolation
 to approximate the function value of a given `x`.
 
@@ -47,22 +36,36 @@ Since `Φ''(x) = φ'(x) = -x * φ(x)`, it can be shown that `||Φ''||∞ = φ(1)
 
 Therefore `h` can be calculated as
 
-```{r}
+
+```r
 h = sqrt(8 / dnorm(1) * 1e-7)
 h
 ```
 
+```
+## [1] 0.001818292
+```
+
 So the `x` and `y` values are
 
-```{r}
+
+```r
 x = seq(0, qnorm(1 - 1e-7) + h, by = h)
 length(x)
+```
+
+```
+## [1] 2861
+```
+
+```r
 y = pnorm(x)
 ```
 
 We write the data to a header file `fastncdf_data.h`:
 
-```{r}
+
+```r
 op = options(digits = 15)
 f = "src/fastncdf_data.h"
 wrt = function(...) cat(..., "\n", sep = "", file = f, append = TRUE)
@@ -89,13 +92,33 @@ options(op)
 
 We compare the speed of `fastncdf()` and `pnorm()` in R.
 
-```{r}
+
+```r
 library(Rcpp)
 sourceCpp("test.cpp")
 
 x = seq(-6, 6, by = 1e-6)
 system.time(y <- pnorm(x))
+```
+
+```
+##    user  system elapsed
+##   1.032   0.028   1.058
+```
+
+```r
 system.time(fasty <- fastncdf(x))
+```
+
+```
+##    user  system elapsed
+##   0.124   0.022   0.145
+```
+
+```r
 max(abs(y - fasty))
 ```
 
+```
+## [1] 9.99999e-08
+```
