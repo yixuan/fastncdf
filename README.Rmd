@@ -1,7 +1,7 @@
 ---
-title: "Approximate Normal CDF"
+title: "Fast Normal CDF"
 author: "Yixuan Qiu"
-date: "January 28, 2016"
+date: "January 29, 2016"
 output: html_document
 ---
 
@@ -9,61 +9,71 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Piecewise Linear Interpolation
+## Introduction
 
-We can pre-compute pairs $(x_i,\Phi(x_i)),i=0,1,\ldots, N$ and use these values to interpolate
-the $\Phi(x)$ function. Since $\Phi(-x)=1-\Phi(x)$, we only consider $x\ge 0$.
+The standard normal CDF `Φ(x)` is an important function in a broad range of
+statistical problems. When we need to evaluate the function many times
+(for example in numerical integration), the computation performance may become
+an issue.
 
-Assume that we require the error to be bounded by $\epsilon=10^{-7}$. First set
-$x_0=0,x_N=\Phi^{-1}(1-10^{-7})=5.199338$, and then we need to find an interval
-width $h$ to satisfy the error bound.
+One way to fast evaluate the function is to use a look-up table, that is, 
+we pre-compute a set of pairs `(x[i], Φ(x[i]))` and then use interpolation
+to approximate the function value of a given `x`.
 
-From [http://pages.cs.wisc.edu/~amos/412/lecture-notes/lecture09.pdf](http://pages.cs.wisc.edu/~amos/412/lecture-notes/lecture09.pdf)
-we know that the interpolation error is bounded by
+This simple library calculates the `Φ(x)` function using piecewise linear
+interpolation. The approximation error is guaranteed to be no greater than
+`ε = 1e-7`.
 
-$$E(t)\le \frac{1}{8}\Vert f''\Vert_\infty h^2$$
+## Algorithm
 
-Since
+We need to first determine the knots `x[i]` that we want to pre-compute.
+Since `Φ(-x) = 1 - Φ(x)`, we only need to consider non-negative `x[i]`'s.
 
-$$\Phi''(x)=\phi'(x)=-x\phi(x)$$
+For `x > Φ^(-1)(1 - 1e-7) = 5.199338`, we set `Φ(x) = 1` and hence the error is
+bounded by `ε`. Let `x[0] = 0`, `x[i] = i * h`, `i = 0, 1, ..., N`, where
+`N` is the smallest integer such that `N * h > 5.199338`.
+Then we need to determine the interval width `h` to satisfy the error bound.
 
-From the function plot we can see that $\Vert \Phi''\Vert_\infty<0.25$.
+For piecewise linear interpolation, the error is bounded by
 
-```{r fig.align='center'}
-curve(x * dnorm(x), 0, 6)
+`E(t) ≤ 1/8 * ||f''||∞ * h^2`
 
-```
+(Source [http://pages.cs.wisc.edu/~amos/412/lecture-notes/lecture09.pdf](http://pages.cs.wisc.edu/~amos/412/lecture-notes/lecture09.pdf))
 
-Then $h$ can be calculated as
+
+Since `Φ''(x) = φ'(x) = -x * φ(x)`, it can be shown that `||Φ''||∞ = φ(1) = 0.2419707`.
+
+Therefore `h` can be calculated as
+
 ```{r}
-h = sqrt(8 / 0.25 * 1e-7)
+h = sqrt(8 / dnorm(1) * 1e-7)
 h
 ```
 
-So the `x` values are
+So the `x` and `y` values are
+
 ```{r}
 x = seq(0, qnorm(1 - 1e-7) + h, by = h)
 length(x)
 y = pnorm(x)
 ```
 
-We write the data to a header file `approx_ncdf_data.h`:
+We write the data to a header file `fastncdf_data.h`:
 
 ```{r}
 op = options(digits = 15)
-f = "approx_ncdf_data.h"
+f = "src/fastncdf_data.h"
 wrt = function(...) cat(..., "\n", sep = "", file = f, append = TRUE)
 
-cat("const int approx_ncdf_n = ", length(x), ";\n", sep = "", file = f)
-wrt("const double approx_ncdf_max = ", x[length(x)], ";")
-wrt("const double approx_ncdf_h = ", h, ";")
-wrt("const double approx_ncdf_x [] = {")
+cat("static const double fastncdf_max = ", x[length(x)], ";\n", sep = "", file = f)
+wrt("static const double fastncdf_h = ", h, ";")
+wrt("static const double fastncdf_x [] = {")
 con = textConnection("xdata", "w")
 write(x, file = con, ncolumns = 5, sep = ", ")
 close(con)
 wrt(paste(xdata, collapse = ",\n"))
 wrt("};")
-wrt("const double approx_ncdf_y [] = {")
+wrt("static const double fastncdf_y [] = {")
 con = textConnection("ydata", "w")
 write(y, file = con, ncolumns = 5, sep = ", ")
 close(con)
@@ -71,26 +81,21 @@ wrt(paste(ydata, collapse = ",\n"))
 wrt("};")
 ```
 
-And the function implementation is
+```{r}
+system("gcc -O2 -fPIC -c src/fastncdf.c")
+system("gcc -O2 -fPIC -I./src -c test.c")
+system("gcc -shared -O2 fastncdf.o test.o -o test_fastncdf.so")
 
-```cpp
-inline double approx_ncdf_pos(const double& x)
+fastncdf = function(x)
 {
-    #include "approx_ncdf_data.h"
-
-    if(x >= approx_ncdf_max)  return 1.0;
-
-    const int i = (int)(x / approx_ncdf_h);
-    const double w = (x - approx_ncdf_x[i]) / approx_ncdf_h;
-    return w * approx_ncdf_y[i + 1] + (1.0 - w) * approx_ncdf_y[i];
+    .C("test_fastncdf", as.numeric(x), length(x), numeric(length(x)))[[3]]
 }
 
-inline double approx_ncdf(const double& x)
-{
-    if(x < 0)
-        return 1.0 - approx_ncdf_pos(-x);
-
-    return approx_ncdf_pos(x);
-}
+dyn.load("test_fastncdf.so")
+x = seq(-6, 6, by = 1e-6)
+system.time(y <- pnorm(x))
+system.time(fasty <- fastncdf(x))
+max(abs(y - fasty))
+dyn.unload("test_fastncdf.so")
 ```
 
