@@ -71,7 +71,7 @@ f = "src/fastncdf_data.h"
 wrt = function(...) cat(..., "\n", sep = "", file = f, append = TRUE)
 
 cat("static const double fastncdf_max = ", x[length(x)], ";\n", sep = "", file = f)
-wrt("static const double fastncdf_h = ", h, ";")
+wrt("static const double fastncdf_hinv = ", 1.0 / h, ";")
 wrt("static const double fastncdf_x [] = {")
 con = textConnection("xdata", "w")
 write(x, file = con, ncolumns = 5, sep = ", ")
@@ -103,7 +103,7 @@ system.time(y <- pnorm(x))
 
 ```
 ##    user  system elapsed
-##   1.032   0.028   1.058
+##   1.038   0.023   1.059
 ```
 
 ```r
@@ -112,7 +112,7 @@ system.time(fasty <- fastncdf(x))
 
 ```
 ##    user  system elapsed
-##   0.124   0.022   0.145
+##   0.069   0.020   0.090
 ```
 
 ```r
