@@ -1,0 +1,96 @@
+---
+title: "Approximate Normal CDF"
+author: "Yixuan Qiu"
+date: "January 28, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Piecewise Linear Interpolation
+
+We can pre-compute pairs $(x_i,\Phi(x_i)),i=0,1,\ldots, N$ and use these values to interpolate
+the $\Phi(x)$ function. Since $\Phi(-x)=1-\Phi(x)$, we only consider $x\ge 0$.
+
+Assume that we require the error to be bounded by $\epsilon=10^{-7}$. First set
+$x_0=0,x_N=\Phi^{-1}(1-10^{-7})=5.199338$, and then we need to find an interval
+width $h$ to satisfy the error bound.
+
+From [http://pages.cs.wisc.edu/~amos/412/lecture-notes/lecture09.pdf](http://pages.cs.wisc.edu/~amos/412/lecture-notes/lecture09.pdf)
+we know that the interpolation error is bounded by
+
+$$E(t)\le \frac{1}{8}\Vert f''\Vert_\infty h^2$$
+
+Since
+
+$$\Phi''(x)=\phi'(x)=-x\phi(x)$$
+
+From the function plot we can see that $\Vert \Phi''\Vert_\infty<0.25$.
+
+```{r fig.align='center'}
+curve(x * dnorm(x), 0, 6)
+
+```
+
+Then $h$ can be calculated as
+```{r}
+h = sqrt(8 / 0.25 * 1e-7)
+h
+```
+
+So the `x` values are
+```{r}
+x = seq(0, qnorm(1 - 1e-7) + h, by = h)
+length(x)
+y = pnorm(x)
+```
+
+We write the data to a header file `approx_ncdf_data.h`:
+
+```{r}
+op = options(digits = 15)
+f = "approx_ncdf_data.h"
+wrt = function(...) cat(..., "\n", sep = "", file = f, append = TRUE)
+
+cat("const int approx_ncdf_n = ", length(x), ";\n", sep = "", file = f)
+wrt("const double approx_ncdf_max = ", x[length(x)], ";")
+wrt("const double approx_ncdf_h = ", h, ";")
+wrt("const double approx_ncdf_x [] = {")
+con = textConnection("xdata", "w")
+write(x, file = con, ncolumns = 5, sep = ", ")
+close(con)
+wrt(paste(xdata, collapse = ",\n"))
+wrt("};")
+wrt("const double approx_ncdf_y [] = {")
+con = textConnection("ydata", "w")
+write(y, file = con, ncolumns = 5, sep = ", ")
+close(con)
+wrt(paste(ydata, collapse = ",\n"))
+wrt("};")
+```
+
+And the function implementation is
+
+```cpp
+inline double approx_ncdf_pos(const double& x)
+{
+    #include "approx_ncdf_data.h"
+
+    if(x >= approx_ncdf_max)  return 1.0;
+
+    const int i = (int)(x / approx_ncdf_h);
+    const double w = (x - approx_ncdf_x[i]) / approx_ncdf_h;
+    return w * approx_ncdf_y[i + 1] + (1.0 - w) * approx_ncdf_y[i];
+}
+
+inline double approx_ncdf(const double& x)
+{
+    if(x < 0)
+        return 1.0 - approx_ncdf_pos(-x);
+
+    return approx_ncdf_pos(x);
+}
+```
+
