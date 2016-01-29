@@ -79,23 +79,21 @@ write(y, file = con, ncolumns = 5, sep = ", ")
 close(con)
 wrt(paste(ydata, collapse = ",\n"))
 wrt("};")
+
+options(op)
 ```
 
+## Performance
+
+We compare the speed of `fastncdf()` and `pnorm()` in R.
+
 ```{r}
-system("gcc -O2 -fPIC -c src/fastncdf.c")
-system("gcc -O2 -fPIC -I./src -c test.c")
-system("gcc -shared -O2 fastncdf.o test.o -o test_fastncdf.so")
+library(Rcpp)
+sourceCpp("test.cpp")
 
-fastncdf = function(x)
-{
-    .C("test_fastncdf", as.numeric(x), length(x), numeric(length(x)))[[3]]
-}
-
-dyn.load("test_fastncdf.so")
 x = seq(-6, 6, by = 1e-6)
 system.time(y <- pnorm(x))
 system.time(fasty <- fastncdf(x))
 max(abs(y - fasty))
-dyn.unload("test_fastncdf.so")
 ```
 
