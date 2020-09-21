@@ -1,14 +1,12 @@
 #ifndef FASTNCDF_H
 #define FASTNCDF_H
+#include <cstddef>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/** computes a pnorm approximation for one point. */
+double fastncdf(double const x) noexcept;
 
-double fastncdf(double x);
-
-#ifdef __cplusplus
-}
-#endif
+/** computes a pnorm approximation for more points. */
+void fastncdf(double const *x, double * res, size_t const n)
+  noexcept;
 
 #endif /* FASTNCDF_H */

@@ -1,0 +1,24 @@
+Package: fastncdf
+Type: Package
+Title: What the Package Does (Title Case)
+Version: 0.1.0
+Authors@R: c(
+  person("Yixuan", "Qiu",  
+         email = "todo@fill.out",
+         role = c("cre", "aut")), 
+  person("Benjamin", "Christoffersen", 
+         email = "boennecd@gmail.com", 
+         role = "ctb"))
+Maintainer: The package maintainer <yourself@somewhere.net>
+Description: More about what it does (maybe more than one line)
+    Use four spaces when indenting paragraphs within the Description.
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
+Suggests: 
+    testthat
+RoxygenNote: 7.1.1
+LinkingTo: 
+    Rcpp
+Imports: 
+    Rcpp
