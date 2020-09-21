@@ -12,6 +12,8 @@
 #' @param q vector of quantiles.
 #' @param p pector vector outputs (probabilities). Needs to have the same
 #' length as \code{q}.
+#' @param precise_tail logical for whether to use \code{\link{pnorm}} in
+#' the tail.
 #' @export
 #'
 #' @examples
@@ -19,13 +21,13 @@
 #' system.time(y <- pnorm(x))
 #' system.time(fasty <- fastpnorm(x))
 #' all.equal(y, fasty) # tiny error
-fastpnorm <- function(q) {
-    .Call(`_fastncdf_fastpnorm`, q)
+fastpnorm <- function(q, precise_tail = FALSE) {
+    .Call(`_fastncdf_fastpnorm`, q, precise_tail)
 }
 
 #' @rdname fastpnorm
 #' @export
-fastpnorm_preallocated <- function(q, p) {
-    invisible(.Call(`_fastncdf_fastpnorm_preallocated`, q, p))
+fastpnorm_preallocated <- function(q, p, precise_tail = FALSE) {
+    invisible(.Call(`_fastncdf_fastpnorm_preallocated`, q, p, precise_tail))
 }
 

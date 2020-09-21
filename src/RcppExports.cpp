@@ -6,29 +6,31 @@
 using namespace Rcpp;
 
 // fastpnorm
-NumericVector fastpnorm(NumericVector q);
-RcppExport SEXP _fastncdf_fastpnorm(SEXP qSEXP) {
+NumericVector fastpnorm(NumericVector q, bool const precise_tail);
+RcppExport SEXP _fastncdf_fastpnorm(SEXP qSEXP, SEXP precise_tailSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::traits::input_parameter< NumericVector >::type q(qSEXP);
-    rcpp_result_gen = Rcpp::wrap(fastpnorm(q));
+    Rcpp::traits::input_parameter< bool const >::type precise_tail(precise_tailSEXP);
+    rcpp_result_gen = Rcpp::wrap(fastpnorm(q, precise_tail));
     return rcpp_result_gen;
 END_RCPP
 }
 // fastpnorm_preallocated
-void fastpnorm_preallocated(NumericVector q, NumericVector p);
-RcppExport SEXP _fastncdf_fastpnorm_preallocated(SEXP qSEXP, SEXP pSEXP) {
+void fastpnorm_preallocated(NumericVector q, NumericVector p, bool const precise_tail);
+RcppExport SEXP _fastncdf_fastpnorm_preallocated(SEXP qSEXP, SEXP pSEXP, SEXP precise_tailSEXP) {
 BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericVector >::type q(qSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type p(pSEXP);
-    fastpnorm_preallocated(q, p);
+    Rcpp::traits::input_parameter< bool const >::type precise_tail(precise_tailSEXP);
+    fastpnorm_preallocated(q, p, precise_tail);
     return R_NilValue;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_fastncdf_fastpnorm", (DL_FUNC) &_fastncdf_fastpnorm, 1},
-    {"_fastncdf_fastpnorm_preallocated", (DL_FUNC) &_fastncdf_fastpnorm_preallocated, 2},
+    {"_fastncdf_fastpnorm", (DL_FUNC) &_fastncdf_fastpnorm, 2},
+    {"_fastncdf_fastpnorm_preallocated", (DL_FUNC) &_fastncdf_fastpnorm_preallocated, 3},
     {NULL, NULL, 0}
 };
 

@@ -113,20 +113,33 @@ system.time(y <- pnorm(x))
 ```
 
     ##    user  system elapsed 
-    ##   0.506   0.008   0.513
+    ##   0.502   0.012   0.515
 
 ``` r
 system.time(fasty <- fastpnorm(x))
 ```
 
     ##    user  system elapsed 
-    ##   0.040   0.016   0.056
+    ##   0.034   0.023   0.057
 
 ``` r
-max(abs(y - fasty))
+system.time(fasty_prec <- fastpnorm(x, TRUE))
 ```
 
-    ## [1] 9.99999e-08
+    ##    user  system elapsed 
+    ##   0.124   0.016   0.139
+
+``` r
+range(y - fasty)
+```
+
+    ## [1] -9.99999e-08  9.99999e-08
+
+``` r
+range(y - fasty_prec)
+```
+
+    ## [1] -9.99999e-08  9.99999e-08
 
 ``` r
 # if we already had a vector with values then we can use a faster version
@@ -135,10 +148,30 @@ system.time(fastpnorm_preallocated(x, res))
 ```
 
     ##    user  system elapsed 
-    ##   0.027   0.000   0.027
+    ##   0.028   0.000   0.028
 
 ``` r
 all.equal(res, fasty)
 ```
 
     ## [1] TRUE
+
+We plot the error versus the quantile below:
+
+``` r
+par(mar = c(5, 5, 1, 1))
+xs <- seq(-6, 6, length.out = 2000)
+plot(xs, fastpnorm(xs) - pnorm(xs), type = "h",
+     bty = "l", xlab = expression(x), ylab = "Error")
+abline(h = 0, lty = 2)
+```
+
+![](man/README_files/err_plt-1.png)<!-- -->
+
+``` r
+plot(xs, fastpnorm(xs, TRUE) - pnorm(xs), type = "h",
+     bty = "l", xlab = expression(x), ylab = "Error")
+abline(h = 0, lty = 2)
+```
+
+![](man/README_files/err_plt-2.png)<!-- -->

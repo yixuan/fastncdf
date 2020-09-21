@@ -6,7 +6,8 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, 
+                      fig.path = file.path("man", "README_files", ""))
 ```
 
 ### Introduction
@@ -81,11 +82,27 @@ library(fastncdf)
 x <- seq(-6, 6, by = 1e-6)
 system.time(y <- pnorm(x))
 system.time(fasty <- fastpnorm(x))
+system.time(fasty_prec <- fastpnorm(x, TRUE))
 
-max(abs(y - fasty))
+range(y - fasty)
+range(y - fasty_prec)
 
 # if we already had a vector with values then we can use a faster version
 res <- rep(0., length(x))
 system.time(fastpnorm_preallocated(x, res))
 all.equal(res, fasty)
+```
+
+We plot the error versus the quantile below:
+
+```{r err_plt, fig.height = 4, fig.width=7}
+par(mar = c(5, 5, 1, 1))
+xs <- seq(-6, 6, length.out = 2000)
+plot(xs, fastpnorm(xs) - pnorm(xs), type = "h",
+     bty = "l", xlab = expression(x), ylab = "Error")
+abline(h = 0, lty = 2)
+
+plot(xs, fastpnorm(xs, TRUE) - pnorm(xs), type = "h",
+     bty = "l", xlab = expression(x), ylab = "Error")
+abline(h = 0, lty = 2)
 ```
