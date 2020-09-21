@@ -6,31 +6,35 @@
 using namespace Rcpp;
 
 // fastpnorm
-NumericVector fastpnorm(NumericVector q, bool const precise_tail);
-RcppExport SEXP _fastncdf_fastpnorm(SEXP qSEXP, SEXP precise_tailSEXP) {
+NumericVector fastpnorm(NumericVector q, bool const precise_tail, bool const use_cubic, unsigned const n_threads);
+RcppExport SEXP _fastncdf_fastpnorm(SEXP qSEXP, SEXP precise_tailSEXP, SEXP use_cubicSEXP, SEXP n_threadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::traits::input_parameter< NumericVector >::type q(qSEXP);
     Rcpp::traits::input_parameter< bool const >::type precise_tail(precise_tailSEXP);
-    rcpp_result_gen = Rcpp::wrap(fastpnorm(q, precise_tail));
+    Rcpp::traits::input_parameter< bool const >::type use_cubic(use_cubicSEXP);
+    Rcpp::traits::input_parameter< unsigned const >::type n_threads(n_threadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(fastpnorm(q, precise_tail, use_cubic, n_threads));
     return rcpp_result_gen;
 END_RCPP
 }
 // fastpnorm_preallocated
-void fastpnorm_preallocated(NumericVector q, NumericVector p, bool const precise_tail);
-RcppExport SEXP _fastncdf_fastpnorm_preallocated(SEXP qSEXP, SEXP pSEXP, SEXP precise_tailSEXP) {
+void fastpnorm_preallocated(NumericVector q, NumericVector p, bool const precise_tail, bool const use_cubic, unsigned const n_threads);
+RcppExport SEXP _fastncdf_fastpnorm_preallocated(SEXP qSEXP, SEXP pSEXP, SEXP precise_tailSEXP, SEXP use_cubicSEXP, SEXP n_threadsSEXP) {
 BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericVector >::type q(qSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type p(pSEXP);
     Rcpp::traits::input_parameter< bool const >::type precise_tail(precise_tailSEXP);
-    fastpnorm_preallocated(q, p, precise_tail);
+    Rcpp::traits::input_parameter< bool const >::type use_cubic(use_cubicSEXP);
+    Rcpp::traits::input_parameter< unsigned const >::type n_threads(n_threadsSEXP);
+    fastpnorm_preallocated(q, p, precise_tail, use_cubic, n_threads);
     return R_NilValue;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_fastncdf_fastpnorm", (DL_FUNC) &_fastncdf_fastpnorm, 2},
-    {"_fastncdf_fastpnorm_preallocated", (DL_FUNC) &_fastncdf_fastpnorm_preallocated, 3},
+    {"_fastncdf_fastpnorm", (DL_FUNC) &_fastncdf_fastpnorm, 4},
+    {"_fastncdf_fastpnorm_preallocated", (DL_FUNC) &_fastncdf_fastpnorm_preallocated, 5},
     {NULL, NULL, 0}
 };
 

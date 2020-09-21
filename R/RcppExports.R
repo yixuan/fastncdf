@@ -14,6 +14,9 @@
 #' length as \code{q}.
 #' @param precise_tail logical for whether to use \code{\link{pnorm}} in
 #' the tail.
+#' @param use_cubic true if monotone cubic interpolation using Fritsch–Carlson
+#' method should be used.
+#' @param n_threads number of threads to use.
 #' @export
 #'
 #' @examples
@@ -21,13 +24,13 @@
 #' system.time(y <- pnorm(x))
 #' system.time(fasty <- fastpnorm(x))
 #' all.equal(y, fasty) # tiny error
-fastpnorm <- function(q, precise_tail = FALSE) {
-    .Call(`_fastncdf_fastpnorm`, q, precise_tail)
+fastpnorm <- function(q, precise_tail = FALSE, use_cubic = FALSE, n_threads = 1L) {
+    .Call(`_fastncdf_fastpnorm`, q, precise_tail, use_cubic, n_threads)
 }
 
 #' @rdname fastpnorm
 #' @export
-fastpnorm_preallocated <- function(q, p, precise_tail = FALSE) {
-    invisible(.Call(`_fastncdf_fastpnorm_preallocated`, q, p, precise_tail))
+fastpnorm_preallocated <- function(q, p, precise_tail = FALSE, use_cubic = FALSE, n_threads = 1L) {
+    invisible(.Call(`_fastncdf_fastpnorm_preallocated`, q, p, precise_tail, use_cubic, n_threads))
 }
 

@@ -5,15 +5,26 @@
 \alias{fastpnorm_preallocated}
 \title{Piecewise Linear Interpolation for pnorm}
 \usage{
-fastpnorm(q, precise_tail = FALSE)
+fastpnorm(q, precise_tail = FALSE, use_cubic = FALSE, n_threads = 1L)
 
-fastpnorm_preallocated(q, p, precise_tail = FALSE)
+fastpnorm_preallocated(
+  q,
+  p,
+  precise_tail = FALSE,
+  use_cubic = FALSE,
+  n_threads = 1L
+)
 }
 \arguments{
 \item{q}{vector of quantiles.}
 
 \item{precise_tail}{logical for whether to use \code{\link{pnorm}} in
 the tail.}
+
+\item{use_cubic}{true if monotone cubic interpolation using Fritsch–Carlson
+method should be used.}
+
+\item{n_threads}{number of threads to use.}
 
 \item{p}{pector vector outputs (probabilities). Needs to have the same
 length as \code{q}.}

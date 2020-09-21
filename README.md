@@ -76,7 +76,7 @@ Since ![\\Phi''(x) = \\phi'(x) = -x
 = 0.2419707](https://latex.codecogs.com/svg.latex?%5ClVert%20%5CPhi%27%27%5CrVert_%5Cinfty%20%3D%20%5Cpsi%281%29%20%3D%200.2419707
 "\\lVert \\Phi''\\rVert_\\infty = \\psi(1) = 0.2419707").
 
-Therefore ![h](https://latex.codecogs.com/svg.latex?h "h") can be
+Therefore, ![h](https://latex.codecogs.com/svg.latex?h "h") can be
 calculated as:
 
 ``` r
@@ -108,47 +108,47 @@ with `pnorm()` in R:
 
 ``` r
 library(fastncdf)
-x <- seq(-6, 6, by = 1e-6)
-system.time(y <- pnorm(x))
+u <- seq(-6, 6, by = 1e-6)
+system.time(truth <- pnorm(u))
 ```
 
     ##    user  system elapsed 
-    ##   0.502   0.012   0.515
+    ##   0.487   0.028   0.516
 
 ``` r
-system.time(fasty <- fastpnorm(x))
+system.time(fasty <- fastpnorm(u))
 ```
 
     ##    user  system elapsed 
-    ##   0.034   0.023   0.057
+    ##   0.041   0.020   0.060
 
 ``` r
-system.time(fasty_prec <- fastpnorm(x, TRUE))
+system.time(fasty_prec <- fastpnorm(u, TRUE))
 ```
 
     ##    user  system elapsed 
-    ##   0.124   0.016   0.139
+    ##   0.130   0.016   0.146
 
 ``` r
-range(y - fasty)
+range(truth - fasty)
 ```
 
     ## [1] -9.99999e-08  9.99999e-08
 
 ``` r
-range(y - fasty_prec)
+range(truth - fasty_prec)
 ```
 
     ## [1] -9.99999e-08  9.99999e-08
 
 ``` r
 # if we already had a vector with values then we can use a faster version
-res <- rep(0., length(x))
-system.time(fastpnorm_preallocated(x, res))
+res <- rep(0., length(u))
+system.time(fastpnorm_preallocated(u, res))
 ```
 
     ##    user  system elapsed 
-    ##   0.028   0.000   0.028
+    ##    0.03    0.00    0.03
 
 ``` r
 all.equal(res, fasty)
@@ -160,8 +160,8 @@ We plot the error versus the quantile below:
 
 ``` r
 par(mar = c(5, 5, 1, 1))
-xs <- seq(-6, 6, length.out = 2000)
-plot(xs, fastpnorm(xs) - pnorm(xs), type = "h",
+us <- seq(-9, 9, length.out = 2000)
+plot(us, fastpnorm(us) - pnorm(us), type = "h",
      bty = "l", xlab = expression(x), ylab = "Error")
 abline(h = 0, lty = 2)
 ```
@@ -169,9 +169,157 @@ abline(h = 0, lty = 2)
 ![](man/README_files/err_plt-1.png)<!-- -->
 
 ``` r
-plot(xs, fastpnorm(xs, TRUE) - pnorm(xs), type = "h",
+plot(us, fastpnorm(us, TRUE) - pnorm(us), type = "h",
      bty = "l", xlab = expression(x), ylab = "Error")
 abline(h = 0, lty = 2)
 ```
 
 ![](man/README_files/err_plt-2.png)<!-- -->
+
+### Other Interpolation Methods
+
+We can get a similar result using R’s `approxfun` to do linear
+interpolation:
+
+``` r
+lin_aprx <- local({
+  f <- approxfun(x = x, y = y, yleft = 0.5, yright = 1)
+  function(x){
+    p <- f(abs(x))
+    ifelse(x < 0, 1 - p, p)
+  }
+})
+
+max(abs(lin_aprx(u) - fastpnorm(u)))
+```
+
+    ## [1] 1.554312e-15
+
+The R version is slower though:
+
+``` r
+system.time(lin_aprx(u))
+```
+
+    ##    user  system elapsed 
+    ##   0.475   0.156   0.631
+
+``` r
+system.time(fastpnorm(u))
+```
+
+    ##    user  system elapsed 
+    ##   0.032   0.028   0.060
+
+We can though use R’s `splinefun` to see the performance of other
+functions. In particular, we can consider monotone cubic interpolation
+using Fritsch–Carlson method:
+
+``` r
+m_splin <- local({
+  n_points <- 300L
+  eps <- 1e-9
+  x <- seq(0, qnorm(1 - eps), length.out = n_points)
+  f <- splinefun(x = x, y = pnorm(x), method = "monoH.FC")
+  x_max <- max(x)
+  
+  function(x){
+    p <- f(abs(x))
+    out <- ifelse(x < 0, 1 - p, p)
+    ifelse(abs(x) > x_max, .5 * (1 + sign(x)), out)
+  }
+})
+
+# check the error 
+range(truth - m_splin(u))
+```
+
+    ## [1] -5.165321e-08  5.165321e-08
+
+``` r
+# plot the error
+plot(us, m_splin(us) - pnorm(us), type = "h",
+     bty = "l", xlab = expression(x), ylab = "Error")
+```
+
+![](man/README_files/monotone_spline-1.png)<!-- -->
+
+We will require three doubles per knot unlike the two we need for the
+linear interpolation. Furthermore, more computation is needed to perform
+the interpolation. However, we may need much fewer knots as shown above
+and this will reduce the cache misses.
+
+A C++ implementation is also provided with this package:
+
+``` r
+all.equal(m_splin(u), fastpnorm(u, use_cubic = TRUE))
+```
+
+    ## [1] TRUE
+
+``` r
+system.time(aprx_cubic <- fastpnorm(u, use_cubic = TRUE))
+```
+
+    ##    user  system elapsed 
+    ##   0.076   0.024   0.101
+
+``` r
+max(abs(aprx_cubic - truth))
+```
+
+    ## [1] 5.165321e-08
+
+``` r
+res <- rep(0., length(u))
+system.time(fastpnorm_preallocated(u, res, use_cubic = TRUE))
+```
+
+    ##    user  system elapsed 
+    ##   0.073   0.000   0.073
+
+``` r
+all.equal(res, aprx_cubic)
+```
+
+    ## [1] TRUE
+
+We can compare the monotone cubic interpolation with the linear
+interpolation with a particular focus on how well they scale in the
+number of threads used in the computation:
+
+``` r
+res <- rep(0, length(u))
+test_func <- function(use_cubic, n_threads)
+  fastpnorm_preallocated(u, res, n_threads = n_threads, 
+                         use_cubic = use_cubic)
+
+bench::mark(
+  `pnorm             ` = pnorm(u),
+  `linear (1 thread) ` = test_func(FALSE, 1L),
+  `linear (2 threads)` = test_func(FALSE, 2L),
+  `linear (4 threads)` = test_func(FALSE, 4L),
+  `linear (6 threads)` = test_func(FALSE, 6L),
+  `cubic  (1 thread) ` = test_func(TRUE , 1L),
+  `cubic  (2 threads)` = test_func(TRUE , 2L),
+  `cubic  (4 threads)` = test_func(TRUE , 4L),
+  `cubic  (6 threads)` = test_func(TRUE , 6L),
+  check = FALSE, min_time = 2)
+```
+
+    ## # A tibble: 9 x 6
+    ##   expression              min   median `itr/sec` mem_alloc `gc/sec`
+    ##   <bch:expr>         <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+    ## 1 pnorm               508.7ms  519.2ms      1.92    91.6MB        0
+    ## 2 linear (1 thread)    29.2ms   30.3ms     32.8         0B        0
+    ## 3 linear (2 threads)     18ms     19ms     51.7    668.5KB        0
+    ## 4 linear (4 threads)   17.7ms     19ms     52.1         0B        0
+    ## 5 linear (6 threads)   17.9ms   18.9ms     51.6         0B        0
+    ## 6 cubic  (1 thread)    68.9ms   69.6ms     14.2         0B        0
+    ## 7 cubic  (2 threads)   35.3ms   35.7ms     27.5         0B        0
+    ## 8 cubic  (4 threads)   18.7ms   20.2ms     49.0         0B        0
+    ## 9 cubic  (6 threads)   18.2ms     19ms     52.0         0B        0
+
+We may prefer the monotone cubic interpolation given the lower error,
+lower memory requirements, it scales better in the number of threads,
+and it has less “sided” errors.
