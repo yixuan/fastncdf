@@ -33,7 +33,7 @@ NumericVector fastpnorm(NumericVector q){
 //' @rdname fastpnorm
 //' @export
 // [[Rcpp::export(rng = false)]]
-void fastpnorm_preallocated(NumericVector p, NumericVector q){
+void fastpnorm_preallocated(NumericVector q, NumericVector p){
   R_len_t const n = q.size();
   if(p.size() != n)
     throw std::invalid_argument("'p' and 'q' are not the same size");

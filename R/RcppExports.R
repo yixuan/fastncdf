@@ -25,7 +25,7 @@ fastpnorm <- function(q) {
 
 #' @rdname fastpnorm
 #' @export
-fastpnorm_preallocated <- function(p, q) {
-    invisible(.Call(`_fastncdf_fastpnorm_preallocated`, p, q))
+fastpnorm_preallocated <- function(q, p) {
+    invisible(.Call(`_fastncdf_fastpnorm_preallocated`, q, p))
 }
 

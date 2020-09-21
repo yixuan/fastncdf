@@ -16,12 +16,12 @@ BEGIN_RCPP
 END_RCPP
 }
 // fastpnorm_preallocated
-void fastpnorm_preallocated(NumericVector p, NumericVector q);
-RcppExport SEXP _fastncdf_fastpnorm_preallocated(SEXP pSEXP, SEXP qSEXP) {
+void fastpnorm_preallocated(NumericVector q, NumericVector p);
+RcppExport SEXP _fastncdf_fastpnorm_preallocated(SEXP qSEXP, SEXP pSEXP) {
 BEGIN_RCPP
-    Rcpp::traits::input_parameter< NumericVector >::type p(pSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type q(qSEXP);
-    fastpnorm_preallocated(p, q);
+    Rcpp::traits::input_parameter< NumericVector >::type p(pSEXP);
+    fastpnorm_preallocated(q, p);
     return R_NilValue;
 END_RCPP
 }

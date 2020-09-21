@@ -1,10 +1,7 @@
 ---
 title: "Fast Normal CDF"
-author: "Yixuan Qiu"
-date: "January 29, 2016"
 output: 
-  md_document:
-    variant: markdown_github
+  github_document:
     pandoc_args: --webtex=https://latex.codecogs.com/svg.latex?
 ---
 
@@ -42,29 +39,29 @@ We need to first determine the knots $x_i$ that we want to pre-compute.
 Since $\Phi(-x) = 1 - \Phi(x)$, we only need to consider non-negative 
 $x_i$'s.
 
-For $x > \Phi^{-1}(1 - 10^{-7})$,  `r qnorm(1 - 1e-7)`, 
+For $x > \Phi^{-1}(1 - \epsilon) = `r qnorm(1 - 1e-7)`$, 
 we set $\Phi(x) = 1$ and hence the error is
 bounded by $\epsilon$. Let $x_0 = 0$, $x_i = ih$, $i = 0, 1, ..., N$, where
-$N$ is the smallest integer such that $N * h > `r qnorm(1 - 1e-7)`$.
+$N$ is the smallest integer such that $N h > `r qnorm(1 - 1e-7)`$.
 Then we need to determine the interval width $h$ to satisfy the error bound.
 
 For piecewise linear interpolation, the error is bounded by
 
-$$E(t) ≤ 1/8 \cdot \lVert f''\rVert_{\infty}h^2$$
+$$E(t) \leq 1/8 \cdot \lVert f''\rVert_{\infty}h^2$$
 
 (Source [http://pages.cs.wisc.edu/~amos/412/lecture-notes/lecture09.pdf](http://pages.cs.wisc.edu/~amos/412/lecture-notes/lecture09.pdf))
 
 
-Since $\Phi''(x) = \Phi'(x) = -x * \Phi(x)$, it can be shown that 
+Since $\Phi''(x) = \phi'(x) = -x \phi(x)$, it can be shown that 
 $\lVert \Phi''\rVert_\infty = \psi(1) = `r dnorm(1)`$.
 
-Therefore `h` can be calculated as
+Therefore $h$ can be calculated as:
 
 ```{r show_h}
 (h <- sqrt(8 / dnorm(1) * 1e-7))
 ```
 
-So the `x` and `y` values are
+So the $x_i$s and $y_i$s values are:
 
 ```{r get_vals}
 x <- seq(0, qnorm(1 - 1e-7) + h, by = h)
@@ -76,7 +73,8 @@ We can then call `dput(x)` and `dput(y)` to get the data we need.
 
 ### Performance
 
-We compare the speed of `fastncdf()` and `pnorm()` in R:
+We compare the speed of `fastpnorm()` and `fastpnorm_preallocated()` 
+with `pnorm()` in R:
 
 ```{r comp_speed}
 library(fastncdf)
@@ -88,6 +86,6 @@ max(abs(y - fasty))
 
 # if we already had a vector with values then we can use a faster version
 res <- rep(0., length(x))
-system.time(fastpnorm_preallocated(res, x))
+system.time(fastpnorm_preallocated(x, res))
 all.equal(res, fasty)
 ```
